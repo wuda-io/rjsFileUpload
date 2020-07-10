@@ -5,76 +5,91 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FileUpload</title>
   <style>
+    * {margin: 0; padding: 0;}
+    body {font-family: Arial, Helvetica, sans-serif;}
+    main {max-width: 600px; margin: 1em auto;}
     .drop-zone {
-        text-align:center;
-        border:2px dashed #ccc;
+      text-align:center;
+      border:2px dashed #ccc;
+      padding: 2em;
+      color: grey;
+      cursor: pointer;
+      margin: 1em 0; 
     }
-    .danger, .danger:hover {
-        background-color: #e74c3c;
+    .drop-zone:hover {
+      background-color: hsl(221, 100%, 94%);
     }
-    .inverse, .inverse:hover {
-        background-color: #34495e;
-    }
-    input[type="file"] {
-        height:32px;
+   input[type="file"] {
+      height:32px;
     }
     div[data-nothingToUpload] {
-        display:none;
+      display:none;
     }
     .deleteFile {
-        padding: 3px 7px;
-        color: #bf0000;
-        font-weight: bold;
-        cursor:pointer;
+      color: #bf0000;
+      cursor: pointer;
+      float: right;
     }
     button {
-        border: none;
-        cursor: pointer;
-        background: #bdc3c7;
-        color: #ffffff;
-        padding: 9px 12px 10px;
-        line-height:1.333;
-        text-decoration: none;
-        text-shadow: none;
-        -webkit-box-shadow: none;
-        -moz-box-shadow: none;
-        box-shadow: none;
-        -webkit-transition: 0.25s;
-        -moz-transition: 0.25s;
-        -o-transition: 0.25s;
-        transition: 0.25s;
-        -webkit-backface-visibility: hidden;
+      border: none;
+      cursor: pointer;
+      background: #bdc3c7;
+      color: #ffffff;
+      padding: 9px 12px 10px;
+      line-height:1.333;
+      text-decoration: none;
+      text-shadow: none;
+      -webkit-box-shadow: none;
+      -moz-box-shadow: none;
+      box-shadow: none;
+      -webkit-transition: 0.25s;
+      -moz-transition: 0.25s;
+      -o-transition: 0.25s;
+      transition: 0.25s;
+    }
+    .containerFile {
+      margin: 1em 0;
+      padding: .5em;
+      background-color: #eee;
+    }
+    .progress {
+      height: 3px;
+      margin-bottom: 5px;
+      background-color: #ddd;
+      clear: both;
     }
     .meter {
-        color:#fff;
-        line-height:18px;
-        font-size:12px;
+      color:#fff;
+      background-color: rgb(4, 94, 110);
+      height: 3px;
+      font-size:10px;
     }
-    #dragHere {
-      padding: 2em;
+    .status {
+      padding: 1em;
+      margin: 1em 0;
+      font-size: 12px;
+      color: grey;
     }
   </style>
 </head>
 <body>
 
-  <div class="row">
-    <div class="large-12 columns">
-      <p class="lead">Select files to upload</p>
-      <button class="inverse small" id="browseButton">+ Add Files</button>
-      <button class="danger small" id="uploadFiles">Start Upload</button>
-      <div class="alert-box alert" data-nothingToUpload>Error Nothing To Upload, Please Add Some Files</div>
-      <div id="dragHere" class="panel drop-zone">Drag &amp; Drop Here</div>
-      <div id="results" class="panel"></div>Status:
-      <div class="alert-box secondary"></div>
-    </div>
-  </div>
+  <main>
+    <h1>Javascript + PHP File Upload</h1>
+    <div style="color: red;" data-nothingToUpload>Error: Nothing To Upload, Please Add Some Files!</div>
+    <div id="dragHere" class="panel drop-zone browseButton">Click or Drag &amp; Drop here</div>
+    <button class="danger small" id="uploadFiles">🔼 Start Upload</button>
+    <div class="status">Ready</div>
+    <div id="results"></div>
+  </main>
   
-  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <!-- JS -->
   <script src="./resumable.js"></script>
   <script>
     (function () {
 
-      var r = new Resumable({
+      // ResumableJS Class
+      const r = new Resumable({
         target: 'upload.php',
         query: {},
         maxChunkRetries: 2,
@@ -84,68 +99,72 @@
         chunkSize: 1 * 1024 * 1024
       });
 
-      var results = $('#results'),
-        draggable = $('#dragHere'),
-        uploadFile = $('#uploadFiles'),
-        browseButton = $('#browseButton'),
-        nothingToUpload = $('[data-nothingToUpload]');
+      const uploadFile = document.getElementById('uploadFiles');
+      const nothingToUpload = document.querySelector('[data-nothingToUpload]');
 
       // if resumable is not supported aka IE
       if (!r.support) location.href = 'http://browsehappy.com/';
 
-      r.assignBrowse(browseButton);
-      r.assignDrop(draggable);
+      r.assignBrowse(document.getElementsByClassName('browseButton'));
+      r.assignDrop(document.getElementById('dragHere'));
 
-      r.on('fileAdded', function (file, event) {
-        var template =
-          '<div data-uniqueid="' + file.uniqueIdentifier + '">' +
-          '<div class="fileName">' + file.fileName + ' (' + file.file.type + ')' + '</div>' +
-          '<div class="large-6 right deleteFile">X</div>' +
-          '<div class="progress large-6">' +
-          '<span class="meter" style="width:0%;"></span>' +
-          '</div>' +
-          '</div>';
-        results.append(template);
+      r.on('fileAdded', function(file, event) {
+        const results = document.getElementById('results');
+
+        const template = document.createElement('div');
+        template.classList.add('containerFile');
+        template.setAttribute('data-uniqueId', file.uniqueIdentifier);
+        // Filename
+        const filename = document.createElement('div');
+        filename.style.float = 'left';
+        filename.innerText = file.fileName;
+        // Remove
+        const deleteFileBtn = document.createElement('div');
+        deleteFileBtn.classList.add('deleteFile');
+        deleteFileBtn.innerText = 'Remove';
+        deleteFileBtn.addEventListener('click', function() {
+          r.removeFile(file);
+          template.remove();
+        });
+
+        // Progressbar
+        const progress = document.createElement('div');
+        progress.classList.add('progress');
+        progress.innerHTML = '<div class="meter" style="width:0%;"></div>';
+
+        template.appendChild(filename);
+        template.appendChild(deleteFileBtn);
+        template.appendChild(progress);
+
+        results.appendChild(template);
       });
 
-      uploadFile.on('click', function () {
-        if (results.children().length > 0) {
+      uploadFile.addEventListener('click', function(){
+        const results = document.getElementById('results');
+        if (results.children.length > 0)
           r.upload();
-        }
         else {
-          nothingToUpload.fadeIn();
-          setTimeout(function () {
-            nothingToUpload.fadeOut();
-          }, 3000);
+          // Display Error
+          nothingToUpload.style.display = 'block';
+          setTimeout(function(){ nothingToUpload.style.display = 'none'; }, 3000);
         }
       });
 
-      $(document).on('click', '.deleteFile', function () {
-        var self = $(this),
-          parent = self.parent(),
-          identifier = parent.data('uniqueid'),
-          file = r.getFromUniqueIdentifier(identifier);
-
-        r.removeFile(file);
-        parent.remove();
-      });
-
+      // Feedback
       r.on('fileProgress', function (file) {
-        var progress = Math.floor(file.progress() * 100);
-        $('[data-uniqueId=' + file.uniqueIdentifier + ']').find('.meter').css('width', progress + '%');
-        $('[data-uniqueId=' + file.uniqueIdentifier + ']').find('.meter').html('&nbsp;' + progress + '%');
+        const progress = Math.floor(file.progress() * 100);
+        document.querySelector('[data-uniqueId="' + file.uniqueIdentifier + '"]').getElementsByClassName('meter')[0].style.width = progress + '%';
+        //$('[data-uniqueId=' + file.uniqueIdentifier + ']').find('.meter').html('&nbsp;' + progress + '%');
       });
-
       r.on('fileSuccess', function (file, message) {
-        $('[data-uniqueId=' + file.uniqueIdentifier + ']').find('.progress').addClass('success');
+        document.querySelector('[data-uniqueId="' + file.uniqueIdentifier + '"]').getElementsByClassName('progress')[0].classList.add('success');
+        //$('[data-uniqueId=' + file.uniqueIdentifier + ']').find('.progress').addClass('success');
       });
-
       r.on('uploadStart', function () {
-        $('.alert-box').text('Uploading....');
+        document.getElementsByClassName('status')[0].innerText = '🔄 Uploading....';
       });
-
       r.on('complete', function () {
-        $('.alert-box').text('Done Uploading');
+        document.getElementsByClassName('status')[0].innerText = '✅ Done Uploading!';
       });
 
     })();
